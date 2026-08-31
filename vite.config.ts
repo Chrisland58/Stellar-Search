@@ -35,6 +35,7 @@ export default defineConfig({
         'src/lib/paymentIntegrity.ts': { statements: 90, branches: 85, functions: 95, lines: 90 },
         'src/lib/serperNormalizer.ts': { statements: 95, branches: 90, functions: 100, lines: 95 },
         'server/corsConfig.ts': { statements: 90, branches: 85, functions: 95, lines: 90 },
+        'server/httpAgents.ts': { statements: 95, branches: 95, functions: 95, lines: 95 },
         'src/components/search/SearchBar.tsx': { statements: 80, branches: 80, functions: 90, lines: 80 },
         'server/index.ts': { statements: 65, branches: 60, functions: 55, lines: 65 },
         'api/search.ts': { statements: 90, branches: 75, functions: 80, lines: 90 },

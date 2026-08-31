@@ -24,6 +24,14 @@ import { paymentMiddlewareFromConfig } from '@x402/express'
 import { ExactStellarScheme } from '@x402/stellar/exact/server'
 import { HTTPFacilitatorClient } from '@x402/core/server'
 import logger from './logger'
+import { serperAgent, groqHttpAgent, facilitatorAgent } from './httpAgents.js'
+import { setGlobalDispatcher } from 'undici'
+
+// Apply the facilitator agent as the global dispatcher so that
+// HTTPFacilitatorClient's internal fetch() calls are pool-bounded.
+// All direct fetch() calls in this file override this with a more
+// specific per-provider dispatcher via the `dispatcher` fetch option.
+setGlobalDispatcher(facilitatorAgent)
 import {
   STELLAR_NETWORK,
   AMOUNT_USDC,
@@ -109,7 +117,7 @@ if (!SERPER_API_KEY)    console.warn('⚠  SERPER_API_KEY not set')
 if (!GROQ_API_KEY)      console.warn('⚠  GROQ_API_KEY not set')
 
 // ─── Groq ─────────────────────────────────────────────────────────────────
-const groq = new Groq({ apiKey: GROQ_API_KEY })
+const groq = new Groq({ apiKey: GROQ_API_KEY, httpAgent: groqHttpAgent })
 
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
@@ -248,6 +256,8 @@ app.get('/search', async (req: Request, res: Response) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      dispatcher: serperAgent,
     })
 
     if (!serperRes.ok) {
@@ -350,6 +360,8 @@ app.get('/images', async (req: Request, res: Response) => {
         q: cleanQ,
         num: Math.min(parseInt(count) || 10, 10),
       }),
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      dispatcher: serperAgent,
     })
 
     if (!serperRes.ok) {
@@ -427,6 +439,8 @@ app.get('/news', async (req: Request, res: Response) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      dispatcher: serperAgent,
     })
 
     if (!serperRes.ok) {

@@ -31,13 +31,14 @@ import type {
   ImageResult,
   NewsResult,
 } from '../src/types/index.js'
+import { horizonAgent, mcpServerAgent, groqHttpAgent } from '../server/httpAgents.js'
 
 dotenv.config()
 
 const SERVER_URL = process.env.SEARCH_API_URL || 'http://localhost:3001'
 const GROQ_API_KEY = process.env.GROQ_API_KEY!
 
-const groq = new Groq({ apiKey: GROQ_API_KEY })
+const groq = new Groq({ apiKey: GROQ_API_KEY, httpAgent: groqHttpAgent })
 
 // ─── MCP server ───────────────────────────────────────────────────────────
 const server = new Server(
@@ -139,7 +140,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // The server's x402 middleware handles the full payment flow.
       // In server-to-server mode the server needs a funded Stellar key.
       // For MCP usage we call the server which itself holds the paying wallet.
-      const res = await fetch(`${SERVER_URL}/search?${params}`)
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      const res = await fetch(`${SERVER_URL}/search?${params}`, { dispatcher: mcpServerAgent })
 
       if (!res.ok) {
         const e = (await res.json().catch(() => ({ error: '' }))) as ApiErrorResponse
@@ -176,7 +178,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const safeCount = Math.min(Math.max(parseInt(String(count)) || 5, 1), 10)
       const params = new URLSearchParams({ q: query, count: String(safeCount) })
 
-      const res = await fetch(`${SERVER_URL}/images?${params}`)
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      const res = await fetch(`${SERVER_URL}/images?${params}`, { dispatcher: mcpServerAgent })
 
       if (!res.ok) {
         const e = (await res.json().catch(() => ({ error: '' }))) as ApiErrorResponse
@@ -216,7 +219,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const params = new URLSearchParams({ q: query, count: String(safeCount) })
       if (freshness) params.set('freshness', freshness)
 
-      const res = await fetch(`${SERVER_URL}/news?${params}`)
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      const res = await fetch(`${SERVER_URL}/news?${params}`, { dispatcher: mcpServerAgent })
 
       if (!res.ok) {
         const e = (await res.json().catch(() => ({ error: '' }))) as ApiErrorResponse
@@ -275,7 +279,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { address } = args as { address: string }
 
     try {
-      const res = await fetch(`${HORIZON_URL}/accounts/${address}`)
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      const res = await fetch(`${HORIZON_URL}/accounts/${address}`, { dispatcher: horizonAgent })
       if (res.status === 404) throw new Error(`Account not found on Stellar ${STELLAR_NETWORK.split(':')[1]}`)
       if (!res.ok) throw new Error(`Horizon returned ${res.status}`)
 
@@ -310,7 +315,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // ── get_search_stats ──────────────────────────────────────────────────
   if (name === 'get_search_stats') {
     try {
-      const res = await fetch(`${SERVER_URL}/health`)
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      const res = await fetch(`${SERVER_URL}/health`, { dispatcher: mcpServerAgent })
       if (!res.ok) throw new Error(`Server health check returned ${res.status}`)
 
       const stats = await res.json() as any

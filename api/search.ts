@@ -8,6 +8,7 @@ import {
 import { consumePaymentPayload } from '../src/lib/paymentIntegrity'
 import { normalizeOrganicResults } from '../src/lib/serperNormalizer'
 import type { SearchResponse, ApiErrorResponse } from '../src/types/index.js'
+import { serperAgent } from '../server/httpAgents.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
@@ -127,6 +128,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      // @ts-expect-error undici dispatcher — not in standard fetch types
+      dispatcher: serperAgent,
     })
 
     if (!serperRes.ok) {
